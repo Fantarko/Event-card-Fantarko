@@ -27,12 +27,7 @@ export interface IEvent {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Produce a URL-friendly slug from a title.
- *
- * @param title - The input text to convert into a slug
- * @returns The generated slug: lowercase letters, digits, and hyphens only; whitespace collapsed to single hyphens and leading/trailing punctuation or hyphens removed
- */
+/** Converts a title to a URL-friendly slug: "Next.js Summit 2024!" → "nextjs-summit-2024" */
 function toSlug(title: string): string {
   return title
     .toLowerCase()
@@ -44,25 +39,16 @@ function toSlug(title: string): string {
 }
 
 /**
- * Convert a date string to ISO date format (YYYY-MM-DD).
- *
- * Preserves multi-day or range-like inputs (e.g., "June 14–16, 2024") by returning
- * them unchanged when they cannot be parsed as a single Date.
- *
- * @param raw - The input date string to normalize
- * @returns The ISO date portion (`YYYY-MM-DD`) if `raw` parses as a valid Date, otherwise the original `raw` string
+ * Normalizes a date string to ISO format (YYYY-MM-DD).
+ * Multi-day ranges like "June 14–16, 2024" cannot be parsed to a single Date,
+ * so they are stored as-is rather than throwing a validation error.
  */
 function normalizeDate(raw: string): string {
   const parsed = new Date(raw);
   return isNaN(parsed.getTime()) ? raw : parsed.toISOString().split("T")[0];
 }
 
-/**
- * Normalize spacing around the range separator in a time string.
- *
- * @param raw - Input time string (single time or range) to normalize
- * @returns The same string with any hyphen range separator formatted as `space-hyphen-space` (e.g., `"9:00AM - 6:00PM"`)
- */
+/** Standardizes spacing around the range separator: "9:00AM-6:00PM" → "9:00AM - 6:00PM" */
 function normalizeTime(raw: string): string {
   return raw.trim().replace(/\s*-\s*/g, " - ");
 }
@@ -161,11 +147,35 @@ const eventSchema = new Schema<IEvent>(
 // Pre-save hook
 // ---------------------------------------------------------------------------
 
-eventSchema.pre("save", function (next) {
+eventSchema.pre("save", async function (next) {
   // Regenerate slug only when the title changes to preserve any existing
   // inbound links. isNew covers the first-save case (all fields are "modified").
   if (this.isNew || this.isModified("title")) {
-    this.slug = toSlug(this.title);
+    const baseSlug = toSlug(this.title);
+    let candidateSlug = baseSlug;
+    let suffix = 1;
+
+    // Check for slug uniqueness and append a suffix if needed.
+    // Loop until we find a slug that doesn't exist in the database.
+    while (true) {
+      // Use the model constructor to query for existing documents.
+      // Exclude the current document by _id when updating (this.isNew === false).
+      const query = this.isNew
+        ? { slug: candidateSlug }
+        : { slug: candidateSlug, _id: { $ne: this._id } };
+
+      const existing = await this.constructor.findOne(query);
+
+      if (!existing) {
+        // Found a unique slug.
+        this.slug = candidateSlug;
+        break;
+      }
+
+      // Slug exists, try with a numeric suffix.
+      candidateSlug = `${baseSlug}-${suffix}`;
+      suffix++;
+    }
   }
 
   if (this.isModified("date")) {
