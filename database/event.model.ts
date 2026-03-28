@@ -27,7 +27,12 @@ export interface IEvent {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Converts a title to a URL-friendly slug: "Next.js Summit 2024!" → "nextjs-summit-2024" */
+/**
+ * Produce a URL-friendly slug from a title.
+ *
+ * @param title - The input text to convert into a slug
+ * @returns The generated slug: lowercase letters, digits, and hyphens only; whitespace collapsed to single hyphens and leading/trailing punctuation or hyphens removed
+ */
 function toSlug(title: string): string {
   return title
     .toLowerCase()
@@ -39,16 +44,25 @@ function toSlug(title: string): string {
 }
 
 /**
- * Normalizes a date string to ISO format (YYYY-MM-DD).
- * Multi-day ranges like "June 14–16, 2024" cannot be parsed to a single Date,
- * so they are stored as-is rather than throwing a validation error.
+ * Convert a date string to ISO date format (YYYY-MM-DD).
+ *
+ * Preserves multi-day or range-like inputs (e.g., "June 14–16, 2024") by returning
+ * them unchanged when they cannot be parsed as a single Date.
+ *
+ * @param raw - The input date string to normalize
+ * @returns The ISO date portion (`YYYY-MM-DD`) if `raw` parses as a valid Date, otherwise the original `raw` string
  */
 function normalizeDate(raw: string): string {
   const parsed = new Date(raw);
   return isNaN(parsed.getTime()) ? raw : parsed.toISOString().split("T")[0];
 }
 
-/** Standardizes spacing around the range separator: "9:00AM-6:00PM" → "9:00AM - 6:00PM" */
+/**
+ * Normalize spacing around the range separator in a time string.
+ *
+ * @param raw - Input time string (single time or range) to normalize
+ * @returns The same string with any hyphen range separator formatted as `space-hyphen-space` (e.g., `"9:00AM - 6:00PM"`)
+ */
 function normalizeTime(raw: string): string {
   return raw.trim().replace(/\s*-\s*/g, " - ");
 }
