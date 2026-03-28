@@ -26,6 +26,15 @@ const cached: MongooseCache = (globalThis.mongooseCache ??= {
   promise: null,
 });
 
+/**
+ * Establishes and caches a Mongoose connection using the MongoDB URL from the environment.
+ *
+ * Reuses an already established connection or an in-progress connection attempt to avoid creating duplicate connections.
+ *
+ * @returns The active Mongoose connection instance
+ * @throws Error if `MONGODB_URL` is not set in the environment
+ * @throws Any error thrown while attempting to connect to the database
+ */
 export async function connectToDatabase(): Promise<typeof mongoose> {
   if (!MONGODB_URL) {
     throw new Error(
