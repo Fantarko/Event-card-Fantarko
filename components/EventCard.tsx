@@ -32,6 +32,7 @@ const EventCard = ({title,image,slug,location,date,time}:Props) => {
                 <p className="time">{time}</p>
             </div>
         </div>
+        
     </Link>
     
   )
