@@ -161,9 +161,9 @@ const eventSchema = new Schema<IEvent>(
 // Pre-save hook
 // ---------------------------------------------------------------------------
 
-eventSchema.pre("save", function (next) {
-  // Regenerate slug only when the title changes to preserve any existing
-  // inbound links. isNew covers the first-save case (all fields are "modified").
+eventSchema.pre("save", async function () { // 1. เพิ่ม async ตรงนี้
+  // 2. ไม่ต้องรับ next เข้ามาเป็น parameter
+  
   if (this.isNew || this.isModified("title")) {
     this.slug = toSlug(this.title);
   }
@@ -176,7 +176,7 @@ eventSchema.pre("save", function (next) {
     this.time = normalizeTime(this.time);
   }
 
-  next();
+  // 3. ลบ next() ออกไปเลย
 });
 
 // ---------------------------------------------------------------------------
